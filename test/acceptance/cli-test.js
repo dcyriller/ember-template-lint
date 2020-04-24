@@ -145,11 +145,6 @@ describe('ember-template-lint executable', function () {
     });
 
     describe('given no path', function () {
-      // TOFIX on windows
-      if (process.platform === 'win32') {
-        return;
-      }
-
       it('should print errors', async function () {
         setProjectConfigForErrors();
         let result = await run(['<', 'app/templates/application.hbs'], {
@@ -195,7 +190,7 @@ describe('ember-template-lint executable', function () {
         let result = await run(
           ['--filename', 'app/templates/application.hbs', '<', 'app/templates/application.hbs'],
           {
-            shell: false,
+            shell: true,
           }
         );
 

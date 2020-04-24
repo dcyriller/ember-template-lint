@@ -3,7 +3,7 @@
 const { _getFilesToLint: getFilesToLint } = require('../../../bin/ember-template-lint');
 const Project = require('../../helpers/fake-project');
 
-const STDIN = '/dev/stdin';
+const STDIN = process.platform === 'win32' ? 'D:\\dev\\stdin' : '/dev/stdin';
 
 describe('getFilesToLint', function () {
   let project = null;
