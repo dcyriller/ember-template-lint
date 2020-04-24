@@ -192,12 +192,16 @@ describe('ember-template-lint executable', function () {
     describe('given no path with --filename', function () {
       it('should print errors', async function () {
         setProjectConfigForErrors();
-        let result = await run(
-          ['--filename', 'app/templates/application.hbs', '<', 'app/templates/application.hbs'],
-          {
-            shell: false,
-          }
-        );
+
+        let args = ['--filename', 'app/templates/application.hbs'];
+        if (process.platform === 'win32') {
+          args.unshift('Get-Content', 'app/templates/application.hbs', '|');
+        } else {
+          args.push('<', 'app/templates/application.hbs');
+        }
+        let result = await run(args, {
+          shell: true,
+        });
 
         expect(result.exitCode).toEqual(1);
         expect(result.stdout).toBeTruthy();
