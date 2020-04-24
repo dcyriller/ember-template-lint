@@ -11,20 +11,24 @@ const processResults = require('../lib/helpers/process-results');
 
 const STDIN = '/dev/stdin';
 
-async function getSource(filePathToRead) {
-  if (filePathToRead === STDIN) {
+async function getSource(filePath) {
+  if (isReadingFromStdin(filePath)) {
     let stdin = await getStdin();
     return stdin;
   }
 
-  return fs.readFileSync(filePathToRead, { encoding: 'utf8' });
+  return fs.readFileSync(filePath, { encoding: 'utf8' });
+}
+
+function isReadingFromStdin(filePath) {
+  return filePath === STDIN;
 }
 
 async function buildLinterOptions(relativeFilePath, cliOptions) {
   let absoluteFilePath = path.resolve(relativeFilePath);
 
   let filePath = relativeFilePath;
-  if (absoluteFilePath === STDIN) {
+  if (isReadingFromStdin(absoluteFilePath)) {
     filePath = cliOptions.filename || '';
   }
 
