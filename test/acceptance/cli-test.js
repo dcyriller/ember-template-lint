@@ -203,9 +203,15 @@ describe('ember-template-lint executable', function () {
           shell: true,
         });
 
+        expect(result.stderr).toMatchInlineSnapshot('""');
+        expect(result.stdout).toMatchInlineSnapshot(`
+          "app/templates/application.hbs
+            1:4  error  Non-translated string used  no-bare-strings
+            1:25  error  Non-translated string used  no-bare-strings
+
+          ✖ 2 problems (2 errors, 0 warnings)"
+        `);
         expect(result.exitCode).toEqual(1);
-        expect(result.stdout).toBeTruthy();
-        expect(result.stderr).toBeFalsy();
       });
     });
 
