@@ -98,7 +98,7 @@ describe('ember-template-lint executable', function () {
   describe('reading files', function () {
     describe('given path to non-existing file', function () {
       it('should exit without error and any console output', async function () {
-        setProjectConfigForErrors();
+        setProjectConfigForErrors(project);
         let result = await run(['app/templates/application-1.hbs']);
 
         expect(result.exitCode).toEqual(0, 'exits without error');
@@ -109,7 +109,7 @@ describe('ember-template-lint executable', function () {
 
     describe('given path to single file with errors', function () {
       it('should print errors', async function () {
-        setProjectConfigForErrors();
+        setProjectConfigForErrors(project);
         let result = await run(['app/templates/application.hbs']);
 
         expect(result.exitCode).toEqual(1);
@@ -120,7 +120,7 @@ describe('ember-template-lint executable', function () {
 
     describe('given wildcard path resolving to single file', function () {
       it('should print errors', async function () {
-        setProjectConfigForErrors();
+        setProjectConfigForErrors(project);
         let result = await run(['app/templates/*']);
 
         expect(result.exitCode).toEqual(1);
@@ -131,7 +131,7 @@ describe('ember-template-lint executable', function () {
 
     describe('given directory path', function () {
       it('should print errors', async function () {
-        setProjectConfigForErrors();
+        setProjectConfigForErrors(project);
         let result = await run(['app']);
 
         expect(result.exitCode).toEqual(1);
@@ -166,7 +166,7 @@ describe('ember-template-lint executable', function () {
       }
 
       it('should print errors', async function () {
-        setProjectConfigForErrors();
+        setProjectConfigForErrors(project);
         let result = await run(['<', 'app/templates/application.hbs'], {
           shell: true,
         });
@@ -206,7 +206,7 @@ describe('ember-template-lint executable', function () {
 
     describe('given no path with --filename', function () {
       it('should print errors', async function () {
-        setProjectConfigForErrors();
+        setProjectConfigForErrors(project);
         let result = await run(
           ['--filename', 'app/templates/application.hbs', '<', 'app/templates/application.hbs'],
           {
@@ -227,7 +227,7 @@ describe('ember-template-lint executable', function () {
       }
 
       it('should print errors', async function () {
-        setProjectConfigForErrors();
+        setProjectConfigForErrors(project);
         let result = await run(['-', '<', 'app/templates/application.hbs'], {
           shell: true,
         });
@@ -245,7 +245,7 @@ describe('ember-template-lint executable', function () {
       }
 
       it('should print errors', async function () {
-        setProjectConfigForErrors();
+        setProjectConfigForErrors(project);
         let result = await run(['/dev/stdin', '<', 'app/templates/application.hbs'], {
           shell: true,
         });
@@ -260,7 +260,7 @@ describe('ember-template-lint executable', function () {
   describe('errors and warnings formatting', function () {
     describe('without --json param', function () {
       it('should print properly formatted error messages', async function () {
-        setProjectConfigForErrors();
+        setProjectConfigForErrors(project);
         let result = await run(['.']);
 
         expect(result.exitCode).toEqual(1);
@@ -521,7 +521,7 @@ describe('ember-template-lint executable', function () {
 
     describe('with --json param', function () {
       it('should print valid JSON string with errors', async function () {
-        setProjectConfigForErrors();
+        setProjectConfigForErrors(project);
         let result = await run(['--json', '.']);
 
         let expectedOutputData = {};
@@ -718,7 +718,7 @@ describe('ember-template-lint executable', function () {
 
       describe('given a directory with errors but a lintrc without any rules', function () {
         it('should exit without error and any console output', async function () {
-          setProjectConfigForErrors();
+          setProjectConfigForErrors(project);
 
           let overrideConfig = {
             rules: {
@@ -898,26 +898,6 @@ describe('ember-template-lint executable', function () {
     });
   });
 
-  // set specific project configuration for test cases.
-  function setProjectConfigForErrors() {
-    project.setConfig({
-      rules: {
-        'no-bare-strings': true,
-      },
-    });
-
-    project.write({
-      app: {
-        templates: {
-          'application.hbs': '<h2>Here too!!</h2> <div>Bare strings are bad...</div>',
-          components: {
-            'foo.hbs': '{{fooData}}',
-          },
-        },
-      },
-    });
-  }
-
   function setProjectConfigWithoutErrors() {
     project.setConfig({
       rules: {
@@ -967,3 +947,23 @@ describe('ember-template-lint executable', function () {
     );
   }
 });
+
+// set specific project configuration for test cases.
+function setProjectConfigForErrors(project) {
+  project.setConfig({
+    rules: {
+      'no-bare-strings': true,
+    },
+  });
+
+  project.write({
+    app: {
+      templates: {
+        'application.hbs': '<h2>Here too!!</h2> <div>Bare strings are bad...</div>',
+        components: {
+          'foo.hbs': '{{fooData}}',
+        },
+      },
+    },
+  });
+}
