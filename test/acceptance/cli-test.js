@@ -7,7 +7,11 @@ const path = require('path');
 
 const Project = require('../helpers/fake-project');
 const setupEnvVar = require('../helpers/setup-env-var');
-const { setProjectConfigForErrors } = require('../helpers/set-config');
+const {
+  setProjectConfigForErrors,
+  setProjectConfigForErrorsAndWarning,
+  setProjectConfigWithoutErrors,
+} = require('../helpers/set-config');
 
 describe('ember-template-lint executable', function () {
   setupEnvVar('GITHUB_ACTIONS', null);
@@ -152,7 +156,7 @@ describe('ember-template-lint executable', function () {
 
     describe('given path to single file without errors', function () {
       it('should exit without error and any console output', async function () {
-        setProjectConfigWithoutErrors();
+        setProjectConfigWithoutErrors(project);
         let result = await run(['app/templates/application.hbs']);
 
         expect(result.exitCode).toEqual(0);
@@ -273,7 +277,7 @@ describe('ember-template-lint executable', function () {
       });
 
       it('should print properly formatted error and warning messages', async function () {
-        setProjectConfigForErrorsAndWarning();
+        setProjectConfigForErrorsAndWarning(project);
         let result = await run(['.']);
 
         expect(result.exitCode).toEqual(1);
@@ -289,7 +293,7 @@ describe('ember-template-lint executable', function () {
       });
 
       it('should be able run a rule passed in (rule:warn)', async function () {
-        setProjectConfigForErrorsAndWarning();
+        setProjectConfigForErrorsAndWarning(project);
         let result = await run(['.', '--no-config-path', '--rule', 'no-html-comments:warn']);
 
         expect(result.exitCode).toEqual(0);
@@ -303,7 +307,7 @@ describe('ember-template-lint executable', function () {
       });
 
       it('should be able run a rule passed in (rule:error)', async function () {
-        setProjectConfigForErrorsAndWarning();
+        setProjectConfigForErrorsAndWarning(project);
         let result = await run(['.', '--no-config-path', '--rule', 'no-html-comments:error']);
 
         expect(result.exitCode).toEqual(1);
@@ -317,7 +321,7 @@ describe('ember-template-lint executable', function () {
       });
 
       it('should be able run a rule passed in (rule:[warn, config])', async function () {
-        setProjectConfigForErrorsAndWarning();
+        setProjectConfigForErrorsAndWarning(project);
         let result = await run([
           '.',
           '--no-config-path',
@@ -336,7 +340,7 @@ describe('ember-template-lint executable', function () {
       });
 
       it('should be able run a rule passed in (rule:[error, config])', async function () {
-        setProjectConfigForErrorsAndWarning();
+        setProjectConfigForErrorsAndWarning(project);
         let result = await run([
           '.',
           '--no-config-path',
@@ -386,7 +390,7 @@ describe('ember-template-lint executable', function () {
 
     describe('with --quiet param', function () {
       it('should print properly formatted error messages, omitting any warnings', async function () {
-        setProjectConfigForErrorsAndWarning();
+        setProjectConfigForErrorsAndWarning(project);
         let result = await run(['.', '--quiet']);
 
         expect(result.exitCode).toEqual(1);
@@ -591,7 +595,7 @@ describe('ember-template-lint executable', function () {
 
     describe('with --json param and --quiet', function () {
       it('should print valid JSON string with errors, omitting warnings', async function () {
-        setProjectConfigForErrorsAndWarning();
+        setProjectConfigForErrorsAndWarning(project);
         let result = await run(['.', '--json', '--quiet']);
 
         let expectedOutputData = {};
@@ -690,7 +694,7 @@ describe('ember-template-lint executable', function () {
 
       describe('given a directory with errors and a lintrc with rules', function () {
         it('should print properly formatted error messages', async function () {
-          setProjectConfigWithoutErrors();
+          setProjectConfigWithoutErrors(project);
 
           let overrideConfig = {
             rules: {
@@ -737,7 +741,7 @@ describe('ember-template-lint executable', function () {
 
     describe('with --print-pending param', function () {
       it('should print a list of pending modules', async function () {
-        setProjectConfigForErrorsAndWarning();
+        setProjectConfigForErrorsAndWarning(project);
 
         let result = await run(['.', '--print-pending']);
 
@@ -811,7 +815,7 @@ describe('ember-template-lint executable', function () {
 
     describe('with --print-pending and --json params', function () {
       it('should print json of pending modules', async function () {
-        setProjectConfigForErrorsAndWarning();
+        setProjectConfigForErrorsAndWarning(project);
 
         let result = await run(['.', '--print-pending', '--json']);
 
@@ -831,7 +835,7 @@ describe('ember-template-lint executable', function () {
       setupEnvVar('GITHUB_ACTIONS', 'true');
 
       it('should print GitHub Actions annotations', async function () {
-        setProjectConfigForErrorsAndWarning();
+        setProjectConfigForErrorsAndWarning(project);
 
         let result = await run(['.'], {
           env: { GITHUB_ACTIONS: 'true' },
@@ -854,7 +858,7 @@ describe('ember-template-lint executable', function () {
 
       describe('with --quiet param', function () {
         it('should print GitHub Actions annotations', async function () {
-          setProjectConfigForErrorsAndWarning();
+          setProjectConfigForErrorsAndWarning(project);
 
           let result = await run(['.', '--quiet'], {
             env: { GITHUB_ACTIONS: 'true' },
@@ -896,44 +900,6 @@ describe('ember-template-lint executable', function () {
     });
   });
 
-  function setProjectConfigWithoutErrors() {
-    project.setConfig({
-      rules: {
-        'no-bare-strings': false,
-      },
-    });
-
-    project.write({
-      app: {
-        templates: {
-          'application.hbs': '<h2>Love for bare strings!!!</h2> <div>Bare strings are great!</div>',
-        },
-      },
-    });
-  }
-
-  function setProjectConfigForErrorsAndWarning() {
-    project.setConfig({
-      rules: {
-        'no-bare-strings': true,
-        'no-html-comments': true,
-      },
-      pending: [
-        {
-          moduleId: 'app/templates/application',
-          only: ['no-html-comments'],
-        },
-      ],
-    });
-    project.write({
-      app: {
-        templates: {
-          'application.hbs':
-            '<h2>Here too!!</h2><div>Bare strings are bad...</div><!-- bad html comment! -->',
-        },
-      },
-    });
-  }
   function run(args, options = {}) {
     options.reject = false;
     options.cwd = options.cwd || project.path('.');
