@@ -9,30 +9,25 @@ const globby = require('globby');
 const Linter = require('../lib/index');
 const processResults = require('../lib/helpers/process-results');
 
-const readFile = require('util').promisify(fs.readFile);
-
 const STDIN = '/dev/stdin';
 
-async function buildLinterOptions(filePath, filename = '', isReadingStdin) {
-  if (isReadingStdin) {
-    let filePath = filename;
-    let moduleId = filePath.slice(0, -4);
-    let source = await getStdin();
-
-    return { source, filePath, moduleId };
-  } else {
-    let moduleId = filePath.slice(0, -4);
-    let source = await readFile(path.resolve(filePath), { encoding: 'utf8' });
-
-    return { source, filePath, moduleId };
+async function getSource(filePathToRead) {
+  if (filePathToRead === STDIN) {
+    let stdin = await getStdin();
+    return stdin;
   }
+
+  return fs.readFileSync(filePathToRead, { encoding: 'utf8' });
 }
 
-function lintSource(linter, options, shouldFix) {
+async function lintFile(linter, filePath, filePathToRead, moduleId, shouldFix) {
+  let source = await getSource(filePathToRead);
+  let options = { source, filePath, moduleId };
+
   if (shouldFix) {
     let { isFixed, output, messages } = linter.verifyAndFix(options);
     if (isFixed) {
-      fs.writeFileSync(options.filePath, output);
+      fs.writeFileSync(filePath, output);
     }
 
     return messages;
@@ -53,18 +48,6 @@ function expandFileGlobs(filePatterns, ignorePattern) {
   });
 
   return result;
-}
-
-function getFilesToLint(filePatterns, ignorePattern = []) {
-  let files;
-
-  if (filePatterns.length === 0 || filePatterns.includes('-') || filePatterns.includes(STDIN)) {
-    files = new Set([STDIN]);
-  } else {
-    files = expandFileGlobs(filePatterns, ignorePattern);
-  }
-
-  return files;
 }
 
 function parseArgv(_argv) {
@@ -201,17 +184,19 @@ async function run() {
     return;
   }
 
-  let filePaths = getFilesToLint(positional, options.ignorePattern);
+  let filesToLint;
+  if (positional.length === 0 || positional.includes('-') || positional.includes(STDIN)) {
+    filesToLint = new Set([STDIN]);
+  } else {
+    filesToLint = expandFileGlobs(positional, options.ignorePattern);
+  }
 
   let resultsAccumulator = [];
-  for (let relativeFilePath of filePaths) {
-    let linterOptions = await buildLinterOptions(
-      relativeFilePath,
-      options.filename,
-      filePaths.has(STDIN)
-    );
-
-    let messages = lintSource(linter, linterOptions, options.fix);
+  for (let relativeFilePath of filesToLint) {
+    let resolvedFilePath = path.resolve(relativeFilePath);
+    let filePath = resolvedFilePath === STDIN ? options.filename || '' : relativeFilePath;
+    let moduleId = filePath.slice(0, -4);
+    let messages = await lintFile(linter, filePath, resolvedFilePath, moduleId, options.fix);
 
     resultsAccumulator.push(...messages);
   }
@@ -236,7 +221,6 @@ async function run() {
 module.exports = {
   _parseArgv: parseArgv,
   _expandFileGlobs: expandFileGlobs,
-  _getFilesToLint: getFilesToLint,
 };
 
 if (require.main === module) {
