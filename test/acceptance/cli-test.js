@@ -4,6 +4,7 @@ const { readFileSync } = require('fs');
 const execa = require('execa');
 const Project = require('../helpers/fake-project');
 const setupEnvVar = require('../helpers/setup-env-var');
+const { setProjectConfigForErrors } = require('../helpers/set-config');
 
 describe('ember-template-lint executable', function () {
   setupEnvVar('GITHUB_ACTIONS', null);
@@ -947,23 +948,3 @@ describe('ember-template-lint executable', function () {
     );
   }
 });
-
-// set specific project configuration for test cases.
-function setProjectConfigForErrors(project) {
-  project.setConfig({
-    rules: {
-      'no-bare-strings': true,
-    },
-  });
-
-  project.write({
-    app: {
-      templates: {
-        'application.hbs': '<h2>Here too!!</h2> <div>Bare strings are bad...</div>',
-        components: {
-          'foo.hbs': '{{fooData}}',
-        },
-      },
-    },
-  });
-}
