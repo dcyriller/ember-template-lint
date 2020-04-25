@@ -878,7 +878,7 @@ describe('ember-template-lint executable', function () {
     });
   });
 
-  describe('--fix usage', function () {
+  describe('autofixing files', function () {
     it('should write fixed file to fs', async function () {
       let config = { rules: { 'require-button-type': true } };
       project.setConfig(config);
