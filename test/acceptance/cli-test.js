@@ -1,6 +1,7 @@
 'use strict';
 const { readFileSync } = require('fs');
 
+const fs = require('fs');
 const execa = require('execa');
 const Project = require('../helpers/fake-project');
 const setupEnvVar = require('../helpers/setup-env-var');
@@ -164,17 +165,15 @@ describe('ember-template-lint executable', function () {
   });
 
   describe('reading from stdin', function () {
-    describe('given no path', function () {
+    describe('given no path and no filename', function () {
       // TOFIX on windows
       if (process.platform === 'win32') {
         return;
       }
 
-      it('should print errors', async function () {
+      it('has exit code 1 and prints help to stderr', async function () {
         setProjectConfigForErrors(project);
-        let result = await run(['<', 'app/templates/application.hbs'], {
-          shell: true,
-        });
+        let result = await runFromStdin('app/templates/application.hbs');
 
         expect(result.exitCode).toEqual(1);
         expect(result.stdout).toBeFalsy();
@@ -212,12 +211,10 @@ describe('ember-template-lint executable', function () {
     describe('given no path with --filename', function () {
       it('should print errors', async function () {
         setProjectConfigForErrors(project);
-        let result = await run(
-          ['--filename', 'app/templates/application.hbs', '<', 'app/templates/application.hbs'],
-          {
-            shell: false,
-          }
-        );
+        let result = await runFromStdin('app/templates/application.hbs', [
+          '--filename',
+          'app/templates/application.hbs',
+        ]);
 
         expect(result.exitCode).toEqual(1);
         expect(result.stdout).toBeTruthy();
@@ -912,5 +909,15 @@ describe('ember-template-lint executable', function () {
       [require.resolve('../../bin/ember-template-lint.js'), ...args],
       options
     );
+  }
+
+  function runFromStdin(filePath, args = []) {
+    let subprocess = execa(
+      process.execPath,
+      [require.resolve('../../bin/ember-template-lint.js'), ...args],
+      { shell: true, reject: false, cwd: project.path('.') }
+    );
+    fs.createReadStream(filePath).pipe(subprocess.stdin);
+    return subprocess;
   }
 });
